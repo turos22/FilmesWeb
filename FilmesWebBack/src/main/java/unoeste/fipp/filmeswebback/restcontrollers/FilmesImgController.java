@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Base64;
 
 @CrossOrigin
 @RestController
@@ -123,23 +124,27 @@ public class FilmesImgController {
             @RequestParam(value = "titulo") String titulo){
         Filme alvo = filmesRepositorio.getFilmeTitulo(titulo);
         if (alvo.getFileName().isEmpty()){
-            return ResponseEntity.badRequest().body(new Erro("O Filme não possui Thumb"));
+            return ResponseEntity.ok("Nao achou");
         }
         else{
             File file = new File("src\\main\\resources\\static\\uploads\\" + alvo.getFileName());
 
             if (!file.exists()) {
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.ok("Nao tem thyumb criada");
             }
-            byte[] imageBytes;
+
             try {
-                imageBytes = Files.readAllBytes(file.toPath());
+                byte[] imageBytes = Files.readAllBytes(file.toPath());
+                String base64 = Base64.getEncoder().encodeToString(imageBytes);
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .body(base64);
+
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            return ResponseEntity.ok()
-                    .contentType(MediaType.IMAGE_JPEG)
-                    .body(imageBytes);
+
         }
     }
 }
