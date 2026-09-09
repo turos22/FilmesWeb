@@ -1,113 +1,184 @@
-async function pesquisar() {
-    const genero = document.getElementById("genero").value;
-    const dados = document.getElementById("dados");
+const API_BASE = 'http://localhost:8080/apis';
+const API_IMAGENS = 'http://localhost:8080/api/imagens';
+const DEFAULT_IMAGE = 'https://via.placeholder.com/300x450?text=Sem+Capa';
 
-    const endpoint =
-        "http://localhost:8080/apis/list-genre/" +
-        encodeURIComponent(genero);
+let listaFilmes = [];
+let filmesExibidos = []; // Mantém o controle exato dos filmes visíveis na tela
 
+document.addEventListener('DOMContentLoaded', () => {
+    carregarFilmes();
+    carregarGenerosFiltro();
+    configurarEventosModal();
+
+    const btnBuscar = document.getElementById('btnBuscar');
+    const inputBusca = document.getElementById('inputBusca');
+    const filtroGenero = document.getElementById('filtroGenero');
+
+    if (btnBuscar) btnBuscar.addEventListener('click', aplicarFiltrosLocalmente);
+    if (inputBusca) inputBusca.addEventListener('input', aplicarFiltrosLocalmente);
+    if (filtroGenero) filtroGenero.addEventListener('change', aplicarFiltrosLocalmente);
+});
+
+// GET /apis/list-movies
+async function carregarFilmes() {
     try {
-        const response = await fetch(endpoint);
-        const filmes = await response.json();
+        const response = await fetch(`${API_BASE}/list-movies`);
+        if (!response.ok) throw new Error('Erro ao buscar lista de filmes');
 
-        dados.innerHTML = await montarTabResultante(filmes);
-
-    } catch (error) {
-        console.log(error);
-        alert("Erro!!!");
-    }
-}
-
-
-async function palavraChave() {
-    const chave = document.getElementById("chave").value;
-    const dados = document.getElementById("dados");
-
-    const endpoint =
-        "http://localhost:8080/apis/list-keyword/" +
-        encodeURIComponent(chave);
-
-    try {
-        const response = await fetch(endpoint);
-        const filmes = await response.json();
-
-        dados.innerHTML = await montarTabResultante(filmes);
-
-    } catch (error) {
-        console.log(error);
-        alert("Erro!!!");
-    }
-}
-
-
-async function data() {
-    const dataInicio = document.getElementById("data-inicio").value;
-    const dataFim = document.getElementById("data-fim").value;
-
-    const dados = document.getElementById("dados");
-
-    const endpoint =
-        "http://localhost:8080/apis/list-year/" +
-        encodeURIComponent(dataInicio) +
-        "/" +
-        encodeURIComponent(dataFim);
-
-    try {
-        const response = await fetch(endpoint);
-        const filmes = await response.json();
-
-        dados.innerHTML = await montarTabResultante(filmes);
-
-    } catch (error) {
-        console.log(error);
-        alert("Erro!!!");
-    }
-}
-
-
-async function montarTabResultante(json) {
-    let str = "";
-
-    for (const filme of json) {
-
-        const endpointbase64 =
-            "http://localhost:8080/api/imagens/getthumb?titulo=" +
-            encodeURIComponent(filme.titulo);
-
-        try {
-            const response = await fetch(endpointbase64);
-
-            if (!response.ok) {
-                console.log(
-                    "Erro ao buscar imagem de",
-                    filme.titulo,
-                    response.status
-                );
-
-                continue;
-            }
-
-            const base64 = await response.text();
-
-            filme.fileName = "data:image/jpeg;base64," + base64;
-
-            str += `
-                <tr>
-                    <td>${filme.titulo}</td>
-                    <td>${filme.ano}</td>
-                    <td>
-                        <img
-                            src="${filme.fileName}"
-                            style="width: 100px;"
-                        />
-                    </td>
-                </tr>
-            `;
-
-        } catch (error) {
-            console.log("Erro na imagem:", error);
+        listaFilmes = await response.json();
+        exibirCards(listaFilmes);
+    } catch (erro) {
+        console.error('Erro na requisição /list-movies:', erro);
+        const msgVazia = document.getElementById('mensagemVazia');
+        if (msgVazia) {
+            msgVazia.style.display = 'block';
+            msgVazia.innerHTML = `<p style="color:red;">Não foi possível carregar os filmes. Verifique o servidor em http://localhost:8080</p>`;
         }
     }
+}
 
-    return str;
+// GET /apis/get-generos
+async function carregarGenerosFiltro() {
+    try {
+        const response = await fetch(`${API_BASE}/get-generos`);
+        if (response.ok) {
+            const generos = await response.json();
+            const select = document.getElementById('filtroGenero');
+            if (select) {
+                select.innerHTML = '<option value="">Todos os Gêneros</option>';
+                generos.forEach(g => {
+                    const nome = typeof g === 'string' ? g : (g.descricao || g.nome || g);
+                    select.innerHTML += `<option value="${nome}">${nome}</option>`;
+                });
+            }
+        }
+    } catch (e) {
+        console.warn('Erro ao carregar lista de gêneros:', e);
+    }
+}
+
+function exibirCards(filmes) {
+    filmesExibidos = filmes; // Atualiza a lista dos filmes atualmente exibidos
+
+    const grid = document.getElementById('gridFilmes');
+    const msgVazia = document.getElementById('mensagemVazia');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+
+    if (!filmes || filmes.length === 0) {
+        if (msgVazia) msgVazia.style.display = 'block';
+        return;
+    }
+
+    if (msgVazia) msgVazia.style.display = 'none';
+
+    filmes.forEach((filme, index) => {
+        let urlCapa = DEFAULT_IMAGE;
+        if (filme.fileName && filme.fileName.trim() !== '') {
+            urlCapa = `${API_IMAGENS}/getthumb?titulo=${encodeURIComponent(filme.titulo)}`;
+        }
+
+        let nomeGenero = 'Geral';
+        if (filme.genero) {
+            nomeGenero = typeof filme.genero === 'string' ? filme.genero : (filme.genero.descricao || filme.genero.nome || 'Geral');
+        }
+
+        const card = document.createElement('div');
+        card.className = 'card-filme';
+        card.innerHTML = `
+            <div class="card-capa-container" style="width: 100%; height: 350px; overflow: hidden; position: relative;">
+                <img src="${urlCapa}"
+                     alt="${filme.titulo}"
+                     class="card-capa"
+                     style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block;"
+                     title="Clique para ver os detalhes"
+                     onclick="abrirModalDetalhes(${index})"
+                     onerror="this.onerror=null; this.src='${DEFAULT_IMAGE}';">
+            </div>
+            <div class="card-corpo" style="padding: 15px; display: flex; flex-direction: column; gap: 8px;">
+                <h3 class="card-titulo" style="margin: 0; font-size: 1.1rem; line-height: 1.3;">${filme.titulo}</h3>
+                <div class="card-meta" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                    <span class="badge-genero">${nomeGenero}</span>
+                    <span class="card-ano">${filme.ano || 'N/A'}</span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function aplicarFiltrosLocalmente() {
+    const termo = document.getElementById('inputBusca')?.value.toLowerCase().trim() || '';
+    const generoSelecionado = document.getElementById('filtroGenero')?.value || '';
+
+    const resultado = listaFilmes.filter(filme => {
+        const titulo = (filme.titulo || '').toLowerCase();
+
+        let generoFilme = '';
+        if (filme.genero) {
+            generoFilme = typeof filme.genero === 'string' ? filme.genero : (filme.genero.descricao || filme.genero.nome || '');
+        }
+
+        const bateTitulo = titulo.includes(termo);
+        const bateGenero = generoSelecionado === '' || generoFilme === generoSelecionado;
+
+        return bateTitulo && bateGenero;
+    });
+
+    exibirCards(resultado);
+}
+
+// MODAL DE DETALHES (Consome filmesExibidos para manter o item correto no filtro)
+function abrirModalDetalhes(index) {
+    const filme = filmesExibidos[index];
+    if (!filme) return;
+
+    let urlCapa = DEFAULT_IMAGE;
+    if (filme.fileName && filme.fileName.trim() !== '') {
+        urlCapa = `${API_IMAGENS}/getthumb?titulo=${encodeURIComponent(filme.titulo)}`;
+    }
+
+    let nomeGenero = 'Geral';
+    if (filme.genero) {
+        nomeGenero = typeof filme.genero === 'string' ? filme.genero : (filme.genero.descricao || filme.genero.nome || 'Geral');
+    }
+
+    const imgModal = document.getElementById('modalCapa');
+    if (imgModal) {
+        imgModal.onerror = function() {
+            this.onerror = null;
+            this.src = DEFAULT_IMAGE;
+        };
+        imgModal.src = urlCapa;
+    }
+
+    document.getElementById('modalTitulo').textContent = filme.titulo;
+    document.getElementById('modalGenero').textContent = nomeGenero;
+    document.getElementById('modalAno').textContent = filme.ano ? `Ano de Lançamento: ${filme.ano}` : 'Ano não cadastrado';
+
+    const modal = document.getElementById('modalDetalhes');
+    if (modal) modal.style.display = 'flex';
+}
+
+function fecharModalDetalhes() {
+    const modal = document.getElementById('modalDetalhes');
+    if (modal) modal.style.display = 'none';
+}
+
+function configurarEventosModal() {
+    const btnFechar = document.getElementById('btnFecharModal');
+    const modal = document.getElementById('modalDetalhes');
+
+    if (btnFechar) btnFechar.addEventListener('click', fecharModalDetalhes);
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) fecharModalDetalhes();
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') fecharModalDetalhes();
+    });
 }
