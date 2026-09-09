@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fotoInput = document.getElementById('fotoInput');
     const imagePreview = document.getElementById('imagePreview');
 
-    // Pré-visualização da Imagem
+    // Pré-visualização da imagem do Pôster
     if (fotoInput) {
         fotoInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (form) form.addEventListener('submit', salvarNovoFilme);
 });
 
-// Carrega os gêneros cadastrados na API para popular o <select id="genero">
+// GET /apis/get-generos
 async function carregarGenerosFormulario() {
     try {
         const response = await fetch(`${API_BASE}/get-generos`);
@@ -44,7 +44,7 @@ async function carregarGenerosFormulario() {
     }
 }
 
-// Consome: POST /apis/add-movie-poster
+// POST /apis/add-movie-poster
 async function salvarNovoFilme(e) {
     e.preventDefault();
 
@@ -54,7 +54,7 @@ async function salvarNovoFilme(e) {
     const fotoFile = document.getElementById('fotoInput').files[0];
 
     if (!titulo || !ano || !genero) {
-        alert('Por favor, preencha todos os campos obrigatórios.');
+        alert('Por favor, preencha todos os campos obrigatórios (Título, Ano e Gênero).');
         return;
     }
 
@@ -63,19 +63,19 @@ async function salvarNovoFilme(e) {
         return;
     }
 
-    // Validação de Extensão exigida pelo Java (.jpg ou .jpeg)
+    // Validação de formato (.jpg ou .jpeg) exigido pelo backend Java
     const nomeArquivo = fotoFile.name.toLowerCase();
     if (!nomeArquivo.endsWith('.jpg') && !nomeArquivo.endsWith('.jpeg')) {
-        alert('O backend aceita apenas imagens nos formatos .jpg ou .jpeg');
+        alert('O servidor aceita apenas imagens no formato .jpg ou .jpeg');
         return;
     }
 
-    // Cria o FormData exatamente com os nomes dos parâmetros do Controller Java
+    // Monta o FormData exatamente com as 4 propriedades da entidade
     const formData = new FormData();
     formData.append('titulo', titulo);
     formData.append('ano', ano);
     formData.append('genero', genero);
-    formData.append('poster', fotoFile); // Deve bater com @RequestParam("poster")
+    formData.append('poster', fotoFile);
 
     try {
         const response = await fetch(`${API_BASE}/add-movie-poster`, {
@@ -88,11 +88,11 @@ async function salvarNovoFilme(e) {
             window.location.href = 'consulta.html';
         } else {
             const erroObj = await response.json().catch(() => null);
-            const mensagemErro = erroObj ? erroObj.mensagem : 'Erro desconhecido no servidor.';
-            alert(`Falha ao cadastrar: ${mensagemErro}`);
+            const mensagemErro = erroObj ? erroObj.mensagem : 'Erro ao cadastrar o filme.';
+            alert(`Falha no cadastro: ${mensagemErro}`);
         }
     } catch (erro) {
-        console.error('Erro na requisição POST:', erro);
-        alert('Não foi possível conectar com o servidor Spring Boot.');
+        console.error('Erro no envio do formulário:', erro);
+        alert('Erro ao se conectar com o servidor Spring Boot.');
     }
 }
