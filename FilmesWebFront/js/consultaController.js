@@ -88,9 +88,9 @@ function exibirCards(filmes) {
         card.className = 'card-filme';
         card.innerHTML = `
             <div class="card-capa-container" style="width: 100%; height: 350px; overflow: hidden; position: relative;">
-                <img src="${urlCapa}"
-                     alt="${filme.titulo}"
-                     class="card-capa"
+                <img src="${urlCapa}" 
+                     alt="${filme.titulo}" 
+                     class="card-capa" 
                      style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block;"
                      title="Clique para ver os detalhes"
                      onclick="abrirModalDetalhes(${index})"
