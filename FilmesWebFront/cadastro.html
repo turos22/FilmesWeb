@@ -23,59 +23,47 @@
 <main class="container">
     <div class="card-form">
         <h2 id="tituloForm"><i class="fa-solid fa-clapperboard"></i> Cadastrar Novo Filme</h2>
-        <form id="formFilme">
-            <input type="hidden" id="filmeId">
+        <form id="formFilme" enctype="multipart/form-data">
+            <!-- Campo oculto se precisar manipular id -->
+            <input type="hidden" id="filmeId" value="">
 
+            <!-- Título do Filme -->
             <div class="form-group">
-                <label for="titulo">Título do Filme *</label>
-                <input type="text" id="titulo" placeholder="Ex: Interstellar" required>
-                <span class="erro-validacao" id="erroTitulo"></span>
+                <label for="titulo">Título *</label>
+                <input type="text" id="titulo" name="titulo" required placeholder="Digite o título do filme">
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="genero">Gênero *</label>
-                    <select id="genero" required>
-                        <option value="">Selecione...</option>
-                        <option value="Ação">Ação</option>
-                        <option value="Aventura">Aventura</option>
-                        <option value="Comédia">Comédia</option>
-                        <option value="Drama">Drama</option>
-                        <option value="Ficção Científica">Ficção Científica</option>
-                        <option value="Terror">Terror</option>
-                    </select>
-                    <span class="erro-validacao" id="erroGenero"></span>
-                </div>
-
-                <div class="form-group">
-                    <label for="ano">Ano de Lançamento *</label>
-                    <input type="number" id="ano" min="1888" max="2030" placeholder="Ex: 2014" required>
-                    <span class="erro-validacao" id="erroAno"></span>
-                </div>
-
-                <div class="form-group">
-                    <label for="nota">Nota (0 a 10)</label>
-                    <input type="number" id="nota" step="0.1" min="0" max="10" placeholder="Ex: 8.6">
-                    <span class="erro-validacao" id="erroNota"></span>
-                </div>
-            </div>
-
+            <!-- Ano de Lançamento -->
             <div class="form-group">
-                <label for="sinopse">Sinopse</label>
-                <textarea id="sinopse" rows="3" placeholder="Insira o resumo do enredo..."></textarea>
+                <label for="ano">Ano *</label>
+                <input type="number" id="ano" name="ano" required placeholder="Ex: 2024" min="1800" max="2100">
             </div>
 
+            <!-- Gênero -->
             <div class="form-group">
-                <label for="fotoInput">Capa do Filme (Arquivo de Imagem)</label>
-                <input type="file" id="fotoInput" accept="image/*">
-                <div class="preview-container">
-                    <img id="imagePreview" src="https://via.placeholder.com/150x220?text=Capa+do+Filme" alt="Pré-visualização da capa">
-                </div>
+                <label for="genero">Gênero *</label>
+                <select id="genero" name="genero" required>
+                    <option value="">Carregando gêneros...</option>
+                </select>
             </div>
 
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" onclick="limparFormulario()">Limpar</button>
-                <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Salvar Filme</button>
+            <!-- Upload do Pôster (.jpg / .jpeg) -->
+            <div class="form-group">
+                <label for="fotoInput">Pôster do Filme (.jpg / .jpeg) *</label>
+                <input type="file" id="fotoInput" name="poster" accept=".jpg,.jpeg,image/jpeg" required>
+            </div>
+
+            <!-- Pré-visualização da Imagem -->
+            <div class="form-group preview-container" style="text-align: center; margin-top: 15px;">
+                <img id="imagePreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='225' viewBox='0 0 150 225' fill='%231e293b'><rect width='150' height='225'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif' font-size='14'>Prévia da Capa</text></svg>"
+                     alt="Prévia do Pôster"
+                     style="max-width: 150px; max-height: 225px; border-radius: 6px; object-fit: cover; border: 1px solid #334155;">
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="form-acoes" style="margin-top: 20px; display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-primary">Salvar Filme</button>
+                <a href="consulta.html" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>
     </div>

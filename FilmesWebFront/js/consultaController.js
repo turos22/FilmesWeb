@@ -3,6 +3,7 @@ const API_IMAGENS = 'http://localhost:8080/api/imagens';
 const DEFAULT_IMAGE = 'https://via.placeholder.com/300x450?text=Sem+Capa';
 
 let listaFilmes = [];
+let filmesExibidos = []; // Mantém o controle exato dos filmes visíveis na tela
 
 document.addEventListener('DOMContentLoaded', () => {
     carregarFilmes();
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function carregarFilmes() {
     try {
         const response = await fetch(`${API_BASE}/list-movies`);
-        if (!response.ok) throw new Error('Erro ao buscar a lista de filmes');
+        if (!response.ok) throw new Error('Erro ao buscar lista de filmes');
 
         listaFilmes = await response.json();
         exibirCards(listaFilmes);
@@ -57,6 +58,8 @@ async function carregarGenerosFiltro() {
 }
 
 function exibirCards(filmes) {
+    filmesExibidos = filmes; // Atualiza a lista dos filmes atualmente exibidos
+
     const grid = document.getElementById('gridFilmes');
     const msgVazia = document.getElementById('mensagemVazia');
     if (!grid) return;
@@ -84,18 +87,20 @@ function exibirCards(filmes) {
         const card = document.createElement('div');
         card.className = 'card-filme';
         card.innerHTML = `
-            <img src="${urlCapa}"
-                 alt="${filme.titulo}"
-                 class="card-capa"
-                 style="cursor: pointer;"
-                 title="Clique para ver os detalhes"
-                 onclick="abrirModalDetalhes(${index})"
-                 onerror="this.onerror=null; this.src='${DEFAULT_IMAGE}';">
-            <div class="card-corpo">
-                <h3 class="card-titulo">${filme.titulo}</h3>
-                <div class="card-meta">
+            <div class="card-capa-container" style="width: 100%; height: 350px; overflow: hidden; position: relative;">
+                <img src="${urlCapa}"
+                     alt="${filme.titulo}"
+                     class="card-capa"
+                     style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; display: block;"
+                     title="Clique para ver os detalhes"
+                     onclick="abrirModalDetalhes(${index})"
+                     onerror="this.onerror=null; this.src='${DEFAULT_IMAGE}';">
+            </div>
+            <div class="card-corpo" style="padding: 15px; display: flex; flex-direction: column; gap: 8px;">
+                <h3 class="card-titulo" style="margin: 0; font-size: 1.1rem; line-height: 1.3;">${filme.titulo}</h3>
+                <div class="card-meta" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
                     <span class="badge-genero">${nomeGenero}</span>
-                    <span>${filme.ano || 'N/A'}</span>
+                    <span class="card-ano">${filme.ano || 'N/A'}</span>
                 </div>
             </div>
         `;
@@ -124,9 +129,9 @@ function aplicarFiltrosLocalmente() {
     exibirCards(resultado);
 }
 
-// MODAL DE DETALHES (Somente atributos existentes no modelo Java)
+// MODAL DE DETALHES (Consome filmesExibidos para manter o item correto no filtro)
 function abrirModalDetalhes(index) {
-    const filme = listaFilmes[index];
+    const filme = filmesExibidos[index];
     if (!filme) return;
 
     let urlCapa = DEFAULT_IMAGE;
@@ -139,8 +144,15 @@ function abrirModalDetalhes(index) {
         nomeGenero = typeof filme.genero === 'string' ? filme.genero : (filme.genero.descricao || filme.genero.nome || 'Geral');
     }
 
-    // Preenche apenas titulo, genero, ano e poster na modal
-    document.getElementById('modalCapa').src = urlCapa;
+    const imgModal = document.getElementById('modalCapa');
+    if (imgModal) {
+        imgModal.onerror = function() {
+            this.onerror = null;
+            this.src = DEFAULT_IMAGE;
+        };
+        imgModal.src = urlCapa;
+    }
+
     document.getElementById('modalTitulo').textContent = filme.titulo;
     document.getElementById('modalGenero').textContent = nomeGenero;
     document.getElementById('modalAno').textContent = filme.ano ? `Ano de Lançamento: ${filme.ano}` : 'Ano não cadastrado';
