@@ -119,32 +119,31 @@ public class FilmesImgController {
             @ApiResponse(responseCode = "404", description = "O arquivo da imagem não foi encontrado no sistema de arquivos")
     })
     @GetMapping(value = "/getthumb")
-    public ResponseEntity<Object> getThumb(
+    public ResponseEntity<byte[]> getThumb(
             @Parameter(description = "Título do filme para buscar a imagem", example = "Matrix")
-            @RequestParam(value = "titulo") String titulo){
+            @RequestParam(value = "titulo") String titulo) {
+
         Filme alvo = filmesRepositorio.getFilmeTitulo(titulo);
-        if (alvo.getFileName().isEmpty()){
-            return ResponseEntity.ok("Nao achou");
+
+        if (alvo == null || alvo.getFileName() == null || alvo.getFileName().isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
-        else{
-            File file = new File("src\\main\\resources\\static\\uploads\\" + alvo.getFileName());
 
-            if (!file.exists()) {
-                return ResponseEntity.ok("Nao tem thyumb criada");
-            }
+        File file = new File("src\\main\\resources\\static\\uploads\\" + alvo.getFileName());
 
-            try {
-                byte[] imageBytes = Files.readAllBytes(file.toPath());
-                String base64 = Base64.getEncoder().encodeToString(imageBytes);
+        if (!file.exists()) {
+            return ResponseEntity.notFound().build();
+        }
 
-                return ResponseEntity.ok()
-                        .contentType(MediaType.TEXT_PLAIN)
-                        .body(base64);
+        try {
+            byte[] imageBytes = Files.readAllBytes(file.toPath());
 
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG) // Retorna como imagem JPEG
+                    .body(imageBytes);
 
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().build();
         }
     }
 }
